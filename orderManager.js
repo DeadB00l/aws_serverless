@@ -23,12 +23,31 @@ const createOrder = body => {
 }
 
 const placeNewOrder = order => {
-    return saveNewOrder(order).then(() => {
+    return saveOrder(order).then(() => {
         return placeOrderStream(order);
     });
 }
 
-const placeOrderStream = order => {
+const fulfillOrder = (orderId, fulfillmentId) => {
+
+    return getOrder(orderId).then(savedOrder => {
+        const order = createFulfilledOrder(savedOrder, fulfillmentId);
+        return saveOrder(order).then(() => {
+           return placeOrderStream(order) 
+        });
+    });
+}
+
+function saveOrder(order) {
+    const params = {
+        TableName: TABLE_NAME,
+        Item: order
+    }
+
+    return dynamo.put(params).promise()
+}
+
+function placeOrderStream(order) {
     const params = {
         Data: JSON.stringify(order),
         PartitionKey: order.orderId,
@@ -38,15 +57,27 @@ const placeOrderStream = order => {
     return kinesis.putRecord(params).promise();
 }
 
-const saveNewOrder = order => {
+function getOrder(orderId) {
     const params = {
-        TableName: TABLE_NAME,
-        Item: order
-    }
+        Key: {
+            orderId: orderId
+        },
+        TableName: TABLE_NAME
+    };
 
-    return dynamo.put(params).promise()
+    return dynamo.get(params).promise().then(result => {
+        return result.Item;
+    })
+}
+
+function createFulfilledOrder(savedOrder, fulfillmentId) {
+    savedOrder.fulfillmentId = fulfillmentId;
+    savedOrder.fulfillmentDate = Date.now();
+    savedOrder.eventType = 'order_fulfilled';
+
+    return savedOrder;
 }
 
 module.exports = {
-    createOrder, placeNewOrder
+    createOrder, placeNewOrder, fulfillOrder
 }

@@ -6,7 +6,7 @@ const ses = new AWS.SES({
 })
 
 const CAKE_PRODUCER_EMAIL = process.env.cakeProducerEmail;
-const ORDERING_SYSTEM_EMAIL = process.env.ordering.orderingSystemEmail;
+const ORDERING_SYSTEM_EMAIL = process.env.orderingSystemEmail;
 
 const handlePlacedOrders = ordersPlaced => {
     var ordersPlacedPromises = [];

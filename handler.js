@@ -25,6 +25,18 @@ const createOrder = async event => {
   })
 };
 
+const orderFulfillment = async (event) => {
+  const body = JSON.parse(event.body);
+  const orderId = body.orderId;
+  const fulfillmentId = body.fulfillmentId;
+
+  return orderManager.fulfillOrder(orderId, fulfillmentId).then(() => {
+    return createResponse(200, `Order with orderId:${orderId} was sent to delivery`);
+  }).catch(error => {
+    return createResponse(400, error);
+  })
+}
+
 const notifyCakeProducer = async event => {
   const records = kinesisHelper.getRecords(event);
 
@@ -42,5 +54,5 @@ const notifyCakeProducer = async event => {
 }
 
 module.exports = {
-  createOrder
+  createOrder, notifyCakeProducer, orderFulfillment
 }

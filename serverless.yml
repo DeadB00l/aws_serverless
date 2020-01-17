@@ -1,4 +1,4 @@
-service: cake-ordering-system
+service: cake-ordering-system 
 
 plugins:
   - serverless-pseudo-parameters
@@ -26,7 +26,7 @@ provider:
         - "*"
       Condition:
         StringEquals:
-          ses.FromAddress:
+          ses:FromAddress:
             - cakeorderingsystem@grr.la
 
 functions:
@@ -36,14 +36,23 @@ functions:
       - http:
           path: /order
           method: post
-    environment: 
+    environment:
+      orderTableName: ordersTable
+      orderStreamName: order-events
+  orderFulfillment:
+    handler: handler.orderFulfillment
+    events:
+      - http:
+          path: /order/fulfill
+          method: post
+    environment:
       orderTableName: ordersTable
       orderStreamName: order-events
   notifyCakeProducer:
     handler: handler.notifyCakeProducer
     events:
       - stream:
-        arn: aws:kinesis:#{AWS::Region}:#{AWS::AccountId}:stream/order-events
+          arn: arn:aws:kinesis:#{AWS::Region}:#{AWS::AccountId}:stream/order-events
     environment:
       region: ${self:provider.region}
       cakeProducerEmail: cakeproducer@grr.la
@@ -56,7 +65,7 @@ resources:
       Properties:
         Name: order-events
         ShardCount: 1
-    orderTable: 
+    orderTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ordersTable
@@ -67,4 +76,3 @@ resources:
           - AttributeName: "orderId"
             KeyType: "HASH"
         BillingMode: PAY_PER_REQUEST
-      
