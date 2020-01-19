@@ -51,6 +51,11 @@ const notifyExternalParties = async event => {
   })
 }
 
+const notifyDeliveryCompany = async event => {
+  console.log('called delivery company')
+  return 'done'
+}
+
 function getCakeProducerPromise(records) {
   const ordersPlaced = records.filter(r => r.eventType === 'order_placed')
 

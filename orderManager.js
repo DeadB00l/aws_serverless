@@ -23,7 +23,7 @@ const createOrder = body => {
 }
 
 const placeNewOrder = order => {
-    return saveOrder(order).then(() => {
+    return this.saveOrder(order).then(() => {
         return placeOrderStream(order);
     });
 }
@@ -32,13 +32,20 @@ const fulfillOrder = (orderId, fulfillmentId) => {
 
     return getOrder(orderId).then(savedOrder => {
         const order = createFulfilledOrder(savedOrder, fulfillmentId);
-        return saveOrder(order).then(() => {
+        return this.saveOrder(order).then(() => {
            return placeOrderStream(order) 
         });
     });
 }
 
-function saveOrder(order) {
+const updateOrderForDelivery = orderId => {
+    return getOrder(orderId).then(order => {
+        order.sentToDeliverDate = Date.now()
+        return order;
+    })
+}
+
+const saveOrder = (order) => {
     const params = {
         TableName: TABLE_NAME,
         Item: order
@@ -79,5 +86,5 @@ function createFulfilledOrder(savedOrder, fulfillmentId) {
 }
 
 module.exports = {
-    createOrder, placeNewOrder, fulfillOrder
+    createOrder, placeNewOrder, fulfillOrder, updateOrderForDelivery, saveOrder
 }
