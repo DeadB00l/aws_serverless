@@ -3,6 +3,7 @@
 const orderManager = require("./orderManager")
 const kinesisHelper = require("./kinesisHelper")
 const cakeProducerManager = require('./cakeProducerManager');
+const deliveryManager = require('./deliveryManager');
 
 const createResponse = (statusCode, message) => {
   const response = {
@@ -37,22 +38,39 @@ const orderFulfillment = async (event) => {
   })
 }
 
-const notifyCakeProducer = async event => {
+const notifyExternalParties = async event => {
   const records = kinesisHelper.getRecords(event);
 
-  const ordersPlaced = records.filter(r => r.eventType === 'order_placed')
+  const cakeProducerPromise = getCakeProducerPromise(records);
+  const deliveryPromise = getDeliveryPromise(records);
 
-  if(ordersPlaced.length <= 0) {
-    return 'there is nothing'
-  }
-
-  cakeProducerManager.handlePlacedOrders(ordersPlaced).then(() => {
+  return Promise.all([ cakeProducerPromise, deliveryPromise ]).then(() => {
     return 'eveything went well'
   }).catch(err => {
     return error;
   })
 }
 
+function getCakeProducerPromise(records) {
+  const ordersPlaced = records.filter(r => r.eventType === 'order_placed')
+
+  if(ordersPlaced.length > 0) {
+    return cakeProducerManager.handlePlacedOrders(ordersPlaced)
+  } else {
+    return null
+  }
+}
+
+function getDeliveryPromise(records) {
+  const orderFulfilled = records.filter(r => r.eventType === 'order_fulfilled');
+
+  if(orderFulfilled.length > 0) {
+    return deliveryManager.deliveryOrder(orderFulfilled);
+  } else {
+    return null
+  }
+}
+
 module.exports = {
-  createOrder, notifyCakeProducer, orderFulfillment
+  createOrder, notifyExternalParties, orderFulfillment
 }
